@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FFCS Timetable Planner — Thadishetti Hithendra</title>
+<style>
+:root{--bg:#f4f6fb;--cd:#fff;--tx:#1b1f2a;--mu:#667085;--bd:#d9dce6;--ac:#3b5bdb;--bad:#e03131;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12141a;--cd:#1c1f29;--tx:#eceef5;--mu:#9aa0b4;--bd:#323747;--ac:#7c93ff;--bad:#ff6b6b}}
+:root[data-theme="dark"]{--bg:#12141a;--cd:#1c1f29;--tx:#eceef5;--mu:#9aa0b4;--bd:#323747;--ac:#7c93ff;--bad:#ff6b6b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--mu);font-size:13px}
+button{font:inherit;border:1px solid var(--bd);background:var(--cd);color:var(--tx);padding:7px 14px;border-radius:8px;cursor:pointer}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.wrap{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:0 18px 24px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 2px;font-size:14px}
+.meta{color:var(--mu);font-size:12px;margin-bottom:8px}
+label{display:block;font-size:12px;color:var(--mu);margin:6px 0 2px}
+select,input[type=text]{width:100%;font:inherit;padding:6px;border-radius:7px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+.tot{font-weight:600;margin-bottom:10px}
+.tw{overflow-x:auto;background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;table-layout:fixed}
+th,td{border:1px solid var(--bd);height:50px;padding:2px 4px;font-size:11px;text-align:center;vertical-align:middle;overflow:hidden}
+th{background:var(--bg);height:30px}
+td.t{width:84px;color:var(--mu);background:var(--bg)}
+td.x{outline:2px solid var(--bad);outline-offset:-2px}
+td b{display:block;font-size:12px;color:#1b1f2a}
+td small{color:#333}
+.note{color:var(--mu);font-size:12px;margin-top:8px}
+.warn{color:var(--bad);font-weight:600}
+footer{text-align:center;color:var(--mu);font-size:13px;padding:6px 18px 22px}
+</style></head><body>
+<header>
+<div><h1>FFCS Timetable Planner</h1><div class="sub">Created by <b>Thadishetti Hithendra</b></div><div class="sub">Win 2026-27 · Batch <select id="br" onchange="setB(this.value)" style="width:auto;display:inline-block;padding:3px 6px"><option value="A">25BCA (CSE AIML)</option><option value="D">25BCD (CSE Data Analytics)</option><option value="E">25BCE (Computer Science Engg)</option></select></div></div>
+<div><button onclick="clr()">Clear All</button> <label style="display:inline">Max credits <select id="mx" onchange="setM(this.value)" style="width:auto;display:inline-block;padding:3px 6px"><option>23</option><option>25</option><option>27</option></select></label></div>
+</header>
+<div class="wrap"><div id="L"></div><div><div id="tt" class="tw"></div><div class="note" id="nt"></div></div></div>
+<footer>Powered by Thadishetti Hithendra</footer>
+<script>
+const DAYS=["Tue","Wed","Thu","Fri","Sat"];
+const TL={8:"8:00–8:50",9:"9:00–9:50",10:"10:00–10:50",11:"11:00–11:50",12:"12:00–12:50",13:"12:40–1:30<br>(lab only)",14:"2:00–2:50",15:"3:00–3:50",16:"4:00–4:50",17:"5:00–5:50",18:"6:00–6:50",19:"6:50–7:30<br>(lab only)"};
+const G=[["TFF1 A1 B1 TC1/G1 D1","F2 A2 B2 TC2/G2 TDD2"],["TGG1 D1 F1 E1/SC2 B1","D2 TF2/G2 E2/SC1 B2 TCC2"],["TEE1 C1 TD1/TG1 TAA1/ECS TBB1/CLUB","TE2/SE1 C2 TD2/TG2 A2 TFF2"],["TCC1 TB1 TA1 F1 TE1/SD2","C2 TB2 TA2 F2 TEE2"],["TDD1 E1/SE2 C1 TF1/G1 A1","D2 E2/SD1 TAA2/ECS TBB2/CLUB TGG2"]];
+const SL={};
+G.forEach((d,i)=>d.forEach((h,j)=>h.split(" ").forEach((c,k)=>c.split("/").forEach(s=>(SL[s]=SL[s]||[]).push([i,(j?14:8)+k])))));
+const lab=n=>{const b=n>30?n-31:n-1;return[Math.floor(b/6),(n>30?14:8)+b%6]};
+const cells=o=>o.split("+").flatMap(s=>s[0]=="L"?[[...lab(+s.slice(1)),s]]:(SL[s]||[]).map(c=>[...c,s]));
+const pairs=(ex=[])=>{const a=[];for(let k=1;k<=29;k++){const x=2*k-1;if(!ex.includes(x))a.push("L"+x+"+L"+(x+1))}return a};
+const T=s=>s.split(",");
+const C=[
+{c:"STS2011",n:"Qualitative and Quantitative Skills Practice - II",cr:1,k:"UC",t:T("A1+TA1,A2+TA2,B1+TB1,B2+TB2,C1+TC1,C1+TCC1,C2+TC2,C2+TCC2,D1+TD1,D1+TDD1,D2+TD2,D2+TDD2,E1+TE1,E2+TE2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2")},
+{c:"MGT1040",n:"Entrepreneurship",cr:4,k:"UC",t:T("E1+TE1,E2+TE2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2"),skip:1},
+{c:"ECS2003",n:"Engineering Clinics - I: Project Ideation, Design and Prototyping",cr:2,k:"UC",t:[],skip:1,noslot:1},
+{c:"MAT1010",n:"Probability and Statistics",cr:4,k:"UC-Sci",t:T("A1+TA1,A2+TA2,D1+TD1,D1+TDD1,D2+TD2,D2+TDD2"),l:pairs([17])},
+{c:"CSE2008",n:"Operating Systems",cr:4,k:"PC",t:T("D1+TD1,D1+TDD1,D2+TD2,D2+TDD2,E1+TE1,E2+TE2"),l:pairs([17])},
+{c:"CSE2007",n:"Database Management Systems",cr:4,k:"PC",t:T("B1+TB1,B2+TB2,C1+TC1,C1+TCC1,C2+TC2,C2+TCC2"),l:pairs([17,49])},
+{c:"CSE1005",n:"Software Engineering",cr:4,k:"PC",t:T("A1+TA1+TAA1,A2+TA2+TAA2,B1+TB1+TBB1,B2+TB2+TBB2")},
+{c:"CSE1006",n:"Foundations for Data Analytics",cr:4,k:"PE-1",t:T("C1+TC1,C1+TCC1,C2+TC2,C2+TCC2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2"),l:T("L1+L2,L5+L6,L11+L12,L15+L16,L23+L24,L29+L30,L33+L34,L37+L38,L39+L40,L41+L42,L45+L46,L51+L52,L55+L56")},
+{c:"CSE1022",n:"Introduction to Programming [Compulsory]",cr:4,k:"UE",t:T("E1+TE1,E2+TE2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2"),l:pairs()},
+{c:"CSE3008",n:"Introduction to Machine Learning",cr:4,k:"PE-1 · compulsory",t:T("C1+TC1,C1+TCC1,C2+TC2,C2+TCC2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2"),l:T("L1+L2,L3+L4,L5+L6,L7+L8,L11+L12,L15+L16,L25+L26,L29+L30,L33+L34,L37+L38,L39+L40,L41+L42,L45+L46,L47+L48,L53+L54,L55+L56")},
+{c:"CSE1007",n:"Introduction to Cryptography",cr:4,k:"PE-1 (any one)",t:T("C1+TC1,C2+TC2,F1+TF1,F1+TFF1,F2+TF2,F2+TFF2"),l:T("L5+L6,L7+L8,L11+L12,L15+L16,L29+L30,L39+L40,L45+L46,L47+L48,L55+L56")},
+{c:"CSE1021",n:"Foundations of Blockchain Technology",cr:4,k:"PE-1 (any one)",t:T("C1+TC1,C2+TCC2,G2+TG2")}
+];
+const HUE=[200,30,330,140,260,50,10,170,290,100,230,0];
+const BL={D:["STS2011","MGT1040","ECS2003","MAT1010","CSE2008","CSE2007","CSE1005","CSE1006","CSE1022"],E:["STS2011","MGT1040","ECS2003","MAT1010","CSE2008","CSE2007","CSE1005","CSE1006","CSE1007","CSE1021","CSE1022"],A:["STS2011","MGT1040","ECS2003","CSE2008","CSE2007","CSE3008","CSE1005","CSE1022"]};
+let MX=25;try{MX=+localStorage.getItem("ffcsm")||25}catch(e){}
+let BR="D";try{BR=localStorage.getItem("ffcsb")||"D"}catch(e){}
+const inL=c=>!BL[BR]||BL[BR].includes(c);
+const ord=()=>C.filter(c=>inL(c.c));
+function setB(v){BR=v;try{localStorage.setItem("ffcsb",v)}catch(e){}draw()}
+let S={};
+try{S=JSON.parse(localStorage.getItem("ffcs26")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("ffcs26",JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+function occ(skip,kind){const m={};C.forEach((co,i)=>{const s=S[co.c];if(!s||!inL(co.c))return;["t","l"].forEach(k=>{if(co.c==skip&&k==kind)return;if(s[k])cells(s[k]).forEach(([d,r,tok])=>{(m[d+"-"+r]=m[d+"-"+r]||[]).push({i,co:co.c,tok,f:s.f})})})});return m}
+const clash=(o,m)=>cells(o).some(([d,r])=>(m[d+"-"+r]||[]).length);
+function pick(c,k,v){S[c]=S[c]||{};if(v)S[c][k]=v;else delete S[c][k];if(k=="f"&&!v)delete S[c].f;save();draw()}
+function reg(c,on){S[c]=on?{on:1}:{};save();draw()}
+function clr(){S={};save();draw()}
+function draw(){
+document.getElementById("br").value=BR;document.getElementById("mx").value=MX;
+const tot=C.reduce((a,co)=>{const s=S[co.c]||{};return a+(inL(co.c)&&(s.t||s.on)?co.cr:0)},0);
+let h='<div class="tot'+(tot>MX?' warn':'')+'">Credits selected: '+tot+' / '+MX+(tot>MX?' – over the limit':'')+'</div>';
+ord().forEach(co=>{const i=C.indexOf(co);const s=S[co.c]||{};
+h+='<div class="card" style="border-left:5px solid hsl('+HUE[i]+' 70% 60%)"><h3>'+co.c+' – '+esc(co.n)+'</h3><div class="meta">'+co.k+' · '+co.cr+' credits'+(co.skip?' · skip if already completed':'')+'</div>';
+if(co.noslot){h+='<label><input type="checkbox" '+(s.on?'checked':'')+' onchange="reg(\''+co.c+'\',this.checked)"> Register (no slot)</label></div>';return}
+const opts=(list,k)=>{const m=occ(co.c,k);return '<option value="">— select —</option>'+list.map(o=>'<option value="'+o+'"'+(s[k]==o?' selected':'')+'>'+o+(clash(o,m)&&s[k]!=o?'  ⚠ clash':'')+'</option>').join('')};
+h+='<label>Theory slot</label><select onchange="pick(\''+co.c+'\',\'t\',this.value)">'+opts(co.t,'t')+'</select>';
+if(co.l)h+='<label>Lab slot</label><select onchange="pick(\''+co.c+'\',\'l\',this.value)">'+opts(co.l,'l')+'</select>';
+h+='</div>'});
+document.getElementById("L").innerHTML=h;
+const pe=BR=="E"?["CSE1006","CSE1007","CSE1021"].filter(c=>(S[c]||{}).t).length:0;const m=occ(),bad=Object.values(m).filter(a=>new Set(a.map(x=>x.co)).size>1).length;
+let t='<table><tr><th></th>'+DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+for(let r=8;r<=19;r++){t+='<tr><td class="t">'+TL[r]+'</td>';
+DAYS.forEach((_,d)=>{const a=m[d+"-"+r]||[],x=new Set(a.map(z=>z.co)).size>1;
+t+='<td class="'+(x?'x':'')+'"'+(a.length?' style="background:hsl('+HUE[a[0].i]+' 70% 85%)"':'')+'>'+a.map(z=>'<b>'+z.co+'</b><small>'+z.tok+'</small>').join('')+'</td>'});
+t+='</tr>'}
+document.getElementById("tt").innerHTML=t+'</table>';
+document.getElementById("nt").innerHTML=bad?'<span class="warn">'+bad+' clashing cell(s) – fix the red cells.</span>':(pe>1?'<span class="warn">Programme Elective-1: choose only one of CSE1006 / CSE1007 / CSE1021.</span>':'Slot positions follow the VIT-AP slot timetable you shared (Tue–Sat).')}
+function setM(v){MX=+v;try{localStorage.setItem("ffcsm",v)}catch(e){}draw()}
+draw();
+</script></body></html>
